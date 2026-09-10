@@ -4,19 +4,21 @@ import { DrawingRelay } from "../games/DrawingRelay";
 import { MazeRunner } from "../games/MazeRunner";
 import { ColorMatch } from "../games/ColorMatch";
 import { SimonSays } from "../games/SimonSays";
+import { SeenJeem } from "../games/SeenJeem";
 import { RoomLobby } from "./RoomLobby";
 import { ConnectionStatus } from "./ConnectionStatus";
 
 interface Props { game: string; username: string; pc: any; onBack: () => void; }
 
-const TITLES: Record<string, string> = { "word-chain": "سلسلة الكلمات", "drawing-relay": "رسم بالتناوب", "maze-runner": "لعبة المتاهة", "color-match": "تطابق الألوان", "simon-says": "سايمون يقول" };
-const EMOJIS: Record<string, string> = { "word-chain": "🔤", "drawing-relay": "🎨", "maze-runner": "🏰", "color-match": "🎯", "simon-says": "🧠" };
+const TITLES: Record<string, string> = { "word-chain": "سلسلة الكلمات", "drawing-relay": "رسم بالتناوب", "maze-runner": "لعبة المتاهة", "color-match": "تطابق الألوان", "simon-says": "سايمون يقول", "seen-jeem": "سين جيم" };
+const EMOJIS: Record<string, string> = { "word-chain": "🔤", "drawing-relay": "🎨", "maze-runner": "🏰", "color-match": "🎯", "simon-says": "🧠", "seen-jeem": "🧩" };
 const HOW_TO_PLAY: Record<string, string> = {
   "word-chain": "كل واحد يحط حرف، وكلنا نكوّن كلمة الكلمة بالترتيب. زيّن اللعبة تدور مين يلعب.",
   "drawing-relay": "المضيف يرسم، والضيف يحزر الكلمة. تبادلوا الأدوار كل جولة.",
   "maze-runner": "المضيف يشوف الخريطة ويوجه، والضيف يحرك بالأسهم. تعاونوا للوصول للنقطة الخضراء.",
   "color-match": "اللعب بالتناوب — مين دورك اصفع زوجين متشابهين.",
-  "simon-says": "احفظوا التسلسل، وفي دورك اضغط الألوان بنفس الترتيب.",
+"simon-says": "احفظوا التسلسل، وفي دورك اضغط الألوان بنفس الترتيب.",
+  "seen-jeem": "لعبة أسئلة لفريقين — كل لاعب يختار فريقه، والمضيف يكشف السؤال والجواب ويوزّع النقاط.",
 };
 
 export function GameWrapper({ game, username, pc, onBack }: Props) {
@@ -37,6 +39,7 @@ export function GameWrapper({ game, username, pc, onBack }: Props) {
       case "maze-runner": return MazeRunner;
       case "color-match": return ColorMatch;
       case "simon-says": return SimonSays;
+      case "seen-jeem": return SeenJeem;
       default: return null;
     }
   }, [game]);
