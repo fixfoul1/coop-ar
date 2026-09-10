@@ -1,139 +1,44 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Peer from "peerjs";
+import type { DataConnection } from "peerjs";
 
 export type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
 
-export interface PeerState {
-  peerId: string | null;
-  roomCode: string | null;
-  status: ConnectionStatus;
-  isHost: boolean;
-}
-
 export function usePeerConnection() {
   const peerRef = useRef<Peer | null>(null);
-  const connRef = useRef<ReturnType<Peer["connect"]> | null>(null);
-  const [state, setState] = useState<PeerState>({
-    peerId: null,
-    roomCode: null,
-    status: "disconnected",
-    isHost: false,
-  });
+  const connsRef = useRef<Map<string, DataConnection>>(new Map());
+  const [state, setState] = useState<{ peerId: string | null; roomCode: string | null; status: ConnectionStatus; isHost: boolean; players: { id: string; name: string }[] }>({ peerId: null, roomCode: null, status: "disconnected", isHost: false, players: [] });
   const onDataRef = useRef<((data: unknown) => void) | null>(null);
 
-  useEffect(() => {
-    return () => {
-      connRef.current?.close();
-      peerRef.current?.destroy();
-    };
-  }, []);
+  const onData = useCallback((data: unknown) => { onDataRef.current?.(data); }, []);
+  const broadcast = useCallback((data: unknown) => { const msg = JSON.stringify(data); connsRef.current.forEach((c) => { if (c.open) c.send(msg); }); }, []);
+  const disconnect = useCallback(() => { connsRef.current.forEach((c) => c.close()); connsRef.current.clear(); peerRef.current?.destroy(); peerRef.current = null; setState({ peerId: null, roomCode: null, status: "disconnected", isHost: false, players: [] }); }, []);
 
-  const onData = useCallback((data: unknown) => {
-    onDataRef.current?.(data);
-  }, []);
-
-  const createRoom = useCallback(
-    (onDataCallback: (data: unknown) => void) => {
-      onDataRef.current = onDataCallback;
-      const id = `coop-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const peer = new Peer(id);
-      peerRef.current = peer;
-
-      peer.on("open", (peerId) => {
-        setState((s) => ({
-          ...s,
-          peerId,
-          roomCode: peerId,
-          status: "connecting",
-          isHost: true,
-        }));
-        console.log(`[PeerJS] Room created: ${peerId}`);
-      });
-
-      peer.on("connection", (conn) => {
-        connRef.current = conn;
-        conn.on("open", () => {
-          setState((s) => ({ ...s, status: "connected" }));
-          console.log("[PeerJS] Guest connected");
-        });
-        conn.on("data", onData);
-        conn.on("close", () => {
-          setState((s) => ({ ...s, status: "disconnected" }));
-          console.log("[PeerJS] Guest disconnected");
-        });
-        conn.on("error", (err) => {
-          console.error("[PeerJS] Connection error:", err);
-          setState((s) => ({ ...s, status: "error" }));
-        });
-      });
-
-      peer.on("error", (err) => {
-        console.error("[PeerJS] Peer error:", err);
-        setState((s) => ({ ...s, status: "error" }));
-      });
-    },
-    []
-  );
-
-  const joinRoom = useCallback(
-    (roomCode: string, onDataCallback: (data: unknown) => void) => {
-      onDataRef.current = onDataCallback;
-      const peer = new Peer();
-      peerRef.current = peer;
-
-      peer.on("open", (peerId) => {
-        setState((s) => ({
-          ...s,
-          peerId,
-          status: "connecting",
-          isHost: false,
-        }));
-        console.log(`[PeerJS] Joining room: ${roomCode}`);
-
-        const conn = peer.connect(roomCode, { reliable: true });
-        connRef.current = conn;
-
-        conn.on("open", () => {
-          setState((s) => ({ ...s, status: "connected", roomCode }));
-          console.log("[PeerJS] Connected to host");
-        });
-        conn.on("data", onData);
-        conn.on("close", () => {
-          setState((s) => ({ ...s, status: "disconnected" }));
-          console.log("[PeerJS] Host disconnected");
-        });
-        conn.on("error", (err) => {
-          console.error("[PeerJS] Connection error:", err);
-          setState((s) => ({ ...s, status: "error" }));
-        });
-      });
-
-      peer.on("error", (err) => {
-        console.error("[PeerJS] Peer error:", err);
-        setState((s) => ({ ...s, status: "error" }));
-      });
-    },
-    []
-  );
-
-  const sendData = useCallback((data: unknown) => {
-    if (connRef.current?.open) {
-      connRef.current.send(data);
-    }
-  }, []);
-
-  const disconnect = useCallback(() => {
-    connRef.current?.close();
-    peerRef.current?.destroy();
-    peerRef.current = null;
-    connRef.current = null;
-    setState({
-      peerId: null,
-      roomCode: null,
-      status: "disconnected",
-      isHost: false,
+  const createRoom = useCallback((cb: (data: unknown) => void) => {
+    onDataRef.current = cb;
+    const peer = new Peer(`h-${Date.now()}`);
+    peerRef.current = peer;
+    peer.on("open", (id) => setState({ peerId: id, roomCode: id, status: "connected", isHost: true, players: [{ id, name: "Host" }] }));
+    peer.on("connection", (conn) => {
+      const pid = conn.peer || `p-${connsRef.current.size}`;
+      connsRef.current.set(pid, conn);
+      setState((p) => ({ ...p, players: [...p.players, { id: pid, name: `Player ${p.players.length}` }] }));
+      conn.on("open", () => broadcast({ type: "players-update", players: state.players }));
+      conn.on("data", (d) => onData(JSON.parse(d as string)));
+      conn.on("close", () => { connsRef.current.delete(pid); setState((p) => ({ ...p, players: p.players.filter((x) => x.id !== pid) })); });
     });
+    peer.on("error", () => setState((p) => ({ ...p, status: "error" })));
+  }, [state.players, onData]);
+
+  const joinRoom = useCallback((code: string, cb: (data: unknown) => void) => {
+    onDataRef.current = cb;
+    const peer = new Peer();
+    peerRef.current = peer;
+    peer.on("open", (id) => { setState({ peerId: id, roomCode: code, status: "connecting", isHost: false, players: [] }); const conn = peer.connect(code, { reliable: true }); connsRef.current.set(code, conn); conn.on("open", () => setState((p) => ({ ...p, status: "connected" }))); conn.on("data", (d) => onData(JSON.parse(d as string))); conn.on("close", () => setState((p) => ({ ...p, status: "disconnected" }))); conn.on("error", () => setState((p) => ({ ...p, status: "error" }))); });
+    peer.on("error", () => setState((p) => ({ ...p, status: "error" })));
   }, []);
 
-  return { ...state, createRoom, joinRoom, sendData, disconnect };
+  const sendAll = useCallback((data: unknown) => { const msg = JSON.stringify(data); connsRef.current.forEach((c) => { if (c.open) c.send(msg); }); onData(data); }, [onData]);
+
+  return { ...state, createRoom, joinRoom, sendAll, disconnect, isConnected: state.status === "connected", playerIdx: state.isHost ? 0 : state.players.findIndex((p) => p.id === state.peerId), playerId: state.peerId || "" };
 }

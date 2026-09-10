@@ -1,26 +1,22 @@
 import { useState } from "react";
 import { Layout } from "./components/Layout";
 import { UsernameModal } from "./components/UsernameModal";
-import { useUsername } from "./hooks/useUsername";
+import { GameWrapper } from "./components/GameWrapper";
+import { usePeerConnection } from "./hooks/usePeerConnection";
 import { Home } from "./pages/Home";
-import { GamePage } from "./pages/GamePage";
 
 export default function App() {
-  const { username, setUsername } = useUsername();
-  const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const [username, setUsername] = useState(() => { try { return localStorage.getItem("coop-ar-u") || ""; } catch { return ""; } });
+  const [game, setGame] = useState<string | null>(null);
+  const pc = usePeerConnection();
+
+  const handleSave = (n: string) => { try { localStorage.setItem("coop-ar-u", n); } catch {} setUsername(n); };
+  const handleBack = () => { pc.disconnect(); setGame(null); };
 
   return (
     <Layout>
-      {!username && <UsernameModal onSave={setUsername} />}
-      {selectedGame && username ? (
-        <GamePage
-          game={selectedGame}
-          username={username}
-          onBack={() => setSelectedGame(null)}
-        />
-      ) : (
-        <Home onSelectGame={setSelectedGame} />
-      )}
+      {!username && <UsernameModal onSave={handleSave} />}
+      {game && username ? <GameWrapper game={game} username={username} pc={pc} onBack={handleBack} /> : <Home onSelectGame={setGame} />}
     </Layout>
   );
 }
