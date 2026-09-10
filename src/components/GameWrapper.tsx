@@ -11,8 +11,15 @@ interface Props { game: string; username: string; pc: any; onBack: () => void; }
 
 const TITLES: Record<string, string> = { "word-chain": "سلسلة الكلمات", "drawing-relay": "رسم بالتناوب", "maze-runner": "لعبة المتاهة", "color-match": "تطابق الألوان", "simon-says": "سايمون يقول" };
 const EMOJIS: Record<string, string> = { "word-chain": "🔤", "drawing-relay": "🎨", "maze-runner": "🏰", "color-match": "🎯", "simon-says": "🧠" };
+const HOW_TO_PLAY: Record<string, string> = {
+  "word-chain": "كل واحد يحط حرف، وكلنا نكوّن كلمة الكلمة بالترتيب. زيّن اللعبة تدور مين يلعب.",
+  "drawing-relay": "المضيف يرسم، والضيف يحزر الكلمة. تبادلوا الأدوار كل جولة.",
+  "maze-runner": "المضيف يشوف الخريطة ويوجه، والضيف يحرك بالأسهم. تعاونوا للوصول للنقطة الخضراء.",
+  "color-match": "اللعب بالتناوب — مين دورك اصفع زوجين متشابهين.",
+  "simon-says": "احفظوا التسلسل، وفي دورك اضغط الألوان بنفس الترتيب.",
+};
 
-export function GameWrapper({ game, pc, onBack }: Props) {
+export function GameWrapper({ game, username, pc, onBack }: Props) {
   const [state, setState] = useState<any>(null);
   const [error, setError] = useState("");
 
@@ -44,7 +51,7 @@ export function GameWrapper({ game, pc, onBack }: Props) {
           <h2 className="mb-1 text-2xl font-bold text-violet-300">{TITLES[game] || game}</h2>
           <p className="text-sm text-slate-400">لعبة تعاونية — حتى 6 لاعبين</p>
         </div>
-        <RoomLobby roomCode={null} onCreateRoom={() => { setError(""); pc.createRoom(handleData); }} onJoinRoom={(c) => { setError(""); pc.joinRoom(c, handleData); }} />
+        <RoomLobby roomCode={null} onCreateRoom={() => { setError(""); pc.createRoom(username, handleData); }} onJoinRoom={(c) => { setError(""); pc.joinRoom(c, username, handleData); }} />
         {error && <p className="text-center text-sm text-red-400">{error}</p>}
         <button onClick={onBack} className="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-sm text-slate-400 hover:bg-slate-700">رجوع</button>
       </div>
@@ -62,14 +69,21 @@ export function GameWrapper({ game, pc, onBack }: Props) {
       {pc.status === "error" && <p className="text-sm text-red-400">فشل الاتصال — تحقق من الكود</p>}
       {pc.status === "connected" && GameComponent && (
         <div className="flex w-full flex-col items-center gap-4">
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {pc.players.map((p: any, i: number) => (
-              <span key={i} className={`rounded-full border px-3 py-1 text-xs ${i === 0 ? "border-violet-500/40 bg-violet-500/10 text-violet-300" : "border-white/10 bg-white/5 text-slate-300"}`}>{p.name}{i === 0 && " 👑"}</span>
-            ))}
+          <div className="flex w-full max-w-lg flex-wrap items-center justify-center gap-2">
+            {(pc.players || []).map((p: any, i: number) => {
+              const isMe = p.id === pc.playerId;
+              return (
+                <span key={i} className={`rounded-full border px-3 py-1 text-xs ${isMe ? "border-cyan-400/50 bg-cyan-500/10 text-cyan-300 font-bold" : "border-violet-500/40 bg-violet-500/10 text-violet-300"}`}>
+                  {i === 0 ? "👑 " : ""}{p.name}{isMe ? " (أنت)" : ""}
+                </span>
+              );
+            })}
           </div>
+          <p className="w-full max-w-lg rounded-xl border border-white/5 bg-white/[0.03] px-4 py-2 text-center text-xs text-slate-400">{HOW_TO_PLAY[game] || ""}</p>
           <GameComponent state={state} broadcast={broadcast} pc={pc} />
         </div>
       )}
+      {pc.status === "connected" && <button onClick={onBack} className="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-xs text-slate-400 hover:bg-slate-700">خروج من الغرفة</button>}
     </div>
   );
 }
