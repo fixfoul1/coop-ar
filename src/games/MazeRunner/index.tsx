@@ -74,7 +74,10 @@ export function MazeRunner({ state, broadcast, pc }: Props) {
   };
 
   const blocked = (x: number, y: number) =>
-    state && (state.level.walls.some((w: Cell) => w.x === x && w.y === y) || state.level.traps.some((t: Cell) => t.x === x && t.y === y));
+    state && state.level.walls.some((w: Cell) => w.x === x && w.y === y);
+
+  const isTrap = (x: number, y: number) =>
+    state && state.level.traps.some((t: Cell) => t.x === x && t.y === y);
 
   const move = (dir: string) => {
     if (!state || isGuide) return;
@@ -83,6 +86,13 @@ export function MazeRunner({ state, broadcast, pc }: Props) {
     if (nx < 0 || nx >= state.level.width || ny < 0 || ny >= state.level.height) return;
     if (blocked(nx, ny)) { broadcast({ ...state, message: "🚧 محجوب — جرّب اتجاه ثاني" }); return; }
     let next = { ...state, playerX: nx, playerY: ny, message: "" };
+    if (isTrap(nx, ny)) {
+      const scores = [...(state.scores || [])]; while (scores.length <= me) scores.push(0);
+      scores[me] = Math.max(0, (scores[me] || 0) - 2);
+      next = { ...next, playerX: state.level.start.x, playerY: state.level.start.y, scores, message: "💥 وقعت في فخ! خسرت نقطتين ورجعت للبداية" };
+      broadcast(next);
+      return;
+    }
     if (nx === state.level.end.x && ny === state.level.end.y) {
       const scores = [...(state.scores || [])]; while (scores.length <= me) scores.push(0);
       scores[me] += 5;
@@ -140,7 +150,7 @@ export function MazeRunner({ state, broadcast, pc }: Props) {
         <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2"><span className="text-base">⭐ النقاط: </span><span className="text-base font-bold text-emerald-400">{state.scores?.join(" - ") || "0"}</span></div>
       </div>
       <div className={`w-full rounded-xl border px-6 py-3 text-center relative ${isGuide ? "border-violet-500/20 bg-violet-500/10" : "border-amber-500/20 bg-amber-500/10"}`}>
-        <p className={`text-base ${isGuide ? "text-violet-300" : "text-amber-300"}`}>{isGuide ? "👑 أنت الموجّه: تشوف كل الخريطة والفخاخ اللي بـ 🟣 — وجّه صديقك للهدف الأخضر!" : "🕹️ أنت المتحرك: ما تشوف إلا حولك بس — اسمع توجيهات الموجّه!"}</p>
+        <p className={`text-base ${isGuide ? "text-violet-300" : "text-amber-300"}`}>{isGuide ? "👑 أنت الموجّه: تشوف كل الخريطة والفخاخ اللي بـ 🟣 (الفخ = -2 نقاط وريجعة للبداية) — وجّه صديقك للهدف الأخضر!" : "🕹️ أنت المتحرك: ما تشوف إلا حولك بس — حذار الفخاخ ورح للهدف الأخضر!"}</p>
       </div>
       {state.message && <div className="rounded-xl px-4 py-2 text-base font-bold bg-white/5 text-slate-300">{state.message}</div>}
       <div className="rounded-xl border border-white/10 bg-white/5 p-1"><canvas ref={canvasRef} width={520} height={520} className="w-full max-w-xl rounded-lg" /></div>
