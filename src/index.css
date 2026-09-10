@@ -4,3 +4,9 @@ body { font-family: var(--font-cairo); direction: rtl; margin: 0; background: li
 #root { min-height: 100vh; display: flex; flex-direction: column; }
 @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 .animate-float { animation: float 3s ease-in-out infinite; }
+@keyframes blob { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-20px) scale(1.1)} 66%{transform:translate(-20px,15px) scale(.95)} }
+.animate-blob { animation: blob 14s ease-in-out infinite; }
+@keyframes spin-slow { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+.animate-spin-slow { animation: spin-slow 12s linear infinite; }
+@keyframes pop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+.animate-pop { animation: pop .35s ease-out both; }

@@ -10,12 +10,16 @@ const GAMES = [
 
 export function Home({ onSelectGame }: { onSelectGame: (g: string) => void }) {
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <div className="mb-10 text-center">
-        <h1 className="mb-3 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-l from-violet-400 via-cyan-400 to-amber-400">coop-ar</h1>
-        <p className="text-lg text-slate-400">5 ألعاب تعاونية — اختر لعبة وادخل غرفة</p>
+    <div className="w-full max-w-5xl mx-auto">
+      <div className="mb-12 text-center">
+        <div className="mb-3 flex items-center justify-center gap-4 text-5xl">
+          <span className="animate-float opacity-60">🎮</span>
+          <h1 className="text-6xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-l from-violet-400 via-cyan-400 to-amber-400 drop-shadow-[0_0_25px_rgba(139,92,246,.35)]">coop-ar</h1>
+          <span className="animate-float opacity-60" style={{ animationDelay: "-1.5s" }}>🕹️</span>
+        </div>
+        <p className="text-xl text-slate-400">5 ألعاب تعاونية — اختر لعبة وادخل غرفة</p>
       </div>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {GAMES.map((g) => <GameCard key={g.id} title={g.t} description={g.d} emoji={g.e} gradient={g.g} onClick={() => onSelectGame(g.id)} />)}
       </div>
     </div>
