@@ -33,7 +33,7 @@ export function Home({ onSelectGame }: HomeProps) {
     <div className="w-full max-w-2xl">
       <div className="mb-10 text-center">
         <h1 className="mb-3 text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-violet-400 via-cyan-400 to-amber-400">
-          tem6
+          coop-ar
         </h1>
         <p className="text-lg text-slate-400">3 ألعاب صغيرة للعب مع صديقك عبر الإنترنت</p>
       </div>

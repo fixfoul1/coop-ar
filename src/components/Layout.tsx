@@ -11,7 +11,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <a href="/" className="group flex items-center gap-3 no-underline">
             <span className="text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-l from-violet-400 via-cyan-400 to-amber-400">
-              tem6
+              coop-ar
             </span>
           </a>
           <div className="flex items-center gap-2">
