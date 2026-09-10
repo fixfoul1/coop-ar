@@ -1,11 +1,14 @@
 const WORDS: Record<string, string[]> = { "فواكه": ["تفاح", "موز", "برتقال", "عنب", "مانجو", "فراولة", "بطيخ", "ليمون", "كرز"], "حيوانات": ["قطة", "كلب", "فيل", "أسد", "نمر", "حمار", "بقرة", "دجاجة", "سمكة"], "ألوان": ["أحمر", "أزرق", "أخضر", "أصفر", "أسود", "أبيض", "برتقالي", "بنفسجي"], "أشياء": ["كرة", "سيف", "كتاب", "قلم", "منضدة", "كرسي", "نافذة", "باب"] };
 
 function genLetters(word: string, extra: number): string[] {
-  const wl = [...new Set(word.split(""))]; const ex: string[] = []; const al = "أبترخضسشصطفكلمنهويوجدثذزس";
-  while (ex.length < extra) { const r = al[Math.floor(Math.random() * al.length)]; if (!wl.includes(r) && !ex.includes(r)) ex.push(r); }
-  const all = [...wl, ...ex];
-  for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
-  return all;
+  const tiles = word.split("");
+  const al = "أبترخضسشصطفكلمنهويوجدثذزس";
+  while (tiles.length < word.length + extra) {
+    const r = al[Math.floor(Math.random() * al.length)];
+    if (!tiles.includes(r)) tiles.push(r);
+  }
+  for (let i = tiles.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [tiles[i], tiles[j]] = [tiles[j], tiles[i]]; }
+  return tiles;
 }
 
 function randomWord(): { cat: string; word: string } {
@@ -27,7 +30,9 @@ export function WordChain({ state, broadcast, pc }: Props) {
   const selectLetter = (idx: number) => {
     if (!state || me !== state.turn || me === -1 || state.selectedIndices.includes(idx)) return;
     const selectedIndices = [...state.selectedIndices, idx];
-    broadcast({ ...state, selectedIndices, currentWord: selectedIndices.map((i) => state.letters[i]).join(""), turn: (state.turn + 1) % len, message: "👍 حطّ فلان الحرف — ادخل الدور الجديد" });
+    const nextTurn = (state.turn + 1) % len;
+    const nextName = pc.players?.[nextTurn]?.name || `لاعب ${nextTurn + 1}`;
+    broadcast({ ...state, selectedIndices, currentWord: selectedIndices.map((i) => state.letters[i]).join(""), turn: nextTurn, message: `✍️ دور ${nextName} الآن — أضف الحرف التالي` });
   };
 
   const clearSel = () => {
@@ -38,7 +43,11 @@ export function WordChain({ state, broadcast, pc }: Props) {
   const submit = () => {
     if (!state || me !== state.turn || me === -1 || !state.currentWord) return;
     if (state.currentWord === state.targetWord) {
-      const scores = [...(state.scores || [])]; scores[me] += 10;
+      const scores = [...(state.scores || [])];
+      while (scores.length < len) scores.push(0);
+      for (let i = 0; i < scores.length; i++) scores[i] += 2;
+      scores[me] += 8;
+      if (state.round >= 5) { broadcast({ ...state, scores, phase: "result" }); return; }
       const { cat, word } = randomWord();
       broadcast({ ...state, category: cat, targetWord: word, letters: genLetters(word, 5), selectedIndices: [], currentWord: "", turn: (state.turn + 1) % len, round: state.round + 1, scores, message: `✅ ${state.currentWord} — صحيحة! +10` });
     } else {
@@ -53,6 +62,16 @@ export function WordChain({ state, broadcast, pc }: Props) {
         <p className="text-center text-sm text-slate-400">كل لاعب يحط حرف بالدور حتى تكتمل الكلمة</p>
         {pc.isHost && pc.roomCode && pc.status === "connected" && <button onClick={startGame} className="w-full cursor-pointer rounded-xl bg-gradient-to-l from-emerald-600 to-cyan-600 px-6 py-4 font-bold text-white shadow-lg shadow-emerald-500/25 hover:brightness-110">ابدأ اللعبة</button>}
         {!pc.isHost && pc.roomCode && pc.status === "connected" && <p className="animate-pulse text-sm text-violet-400">في انتظار المضيف...</p>}
+      </div>
+    );
+  }
+
+  if (state.phase === "result") {
+    return (
+      <div className="flex w-full max-w-lg flex-col items-center gap-6">
+        <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-l from-emerald-400 to-cyan-400">انتهت الكلمات! 🔤</h2>
+        <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-8 text-center"><p className="text-sm text-slate-400">النتيجة</p><p className="my-2 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-l from-emerald-400 to-cyan-500">{state.scores?.join(" - ") || "0"}</p></div>
+        {pc.isHost && <button onClick={() => broadcast({ phase: "lobby" })} className="cursor-pointer rounded-xl bg-gradient-to-l from-violet-600 to-indigo-600 px-6 py-3 font-bold text-white hover:brightness-110">إعادة اللعب</button>}
       </div>
     );
   }

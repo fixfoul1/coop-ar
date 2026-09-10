@@ -11,8 +11,8 @@ export function SimonSays({ state, broadcast, pc }: Props) {
   const me = pc.playerIdx;
 
   const showSequence = (s: any) => {
-    broadcast({ ...s, roundActive: true, currentColor: -1, input: [], message: "👀 شاهد التسلسل..." });
-    s.sequence.forEach((c: number, i: number) => { setTimeout(() => { flashColor(c); broadcast({ ...s, roundActive: true, input: [], currentColor: c }); }, (i + 1) * 700); });
+    broadcast({ ...s, roundActive: false, currentColor: -1, input: [], message: "👀 شاهد التسلسل..." });
+    s.sequence.forEach((c: number, i: number) => { setTimeout(() => flashColor(c), (i + 1) * 700); });
     setTimeout(() => broadcast({ ...s, roundActive: true, input: [], currentColor: -1, message: `⚡ دور ${pc.players?.[s.turn]?.name || ""} — كرر التسلسل!` }), (s.sequence.length + 1) * 700);
   };
 
@@ -36,7 +36,8 @@ export function SimonSays({ state, broadcast, pc }: Props) {
       broadcast({ ...state, input, message: `✅ ${input.length}/${seq.length}` });
       return;
     }
-    const scores = [...(state.scores || [])]; scores[state.turn] += 10;
+    const scores = [...(state.scores || [])]; while (scores.length <= state.turn) scores.push(0);
+    scores[state.turn] += 10;
     const turn = (state.turn + 1) % len;
     const nextRound = state.round + 1;
     broadcast({ ...state, scores, turn, input: [], roundActive: false, message: `✅ ${pc.players?.[state.turn]?.name || ""} نجح! +10` });

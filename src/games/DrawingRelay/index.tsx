@@ -38,8 +38,9 @@ export function DrawingRelay({ state, broadcast, pc }: Props) {
   const submitGuess = () => {
     if (!state?.guess || isDrawer) return;
     if (state.guess.trim() === state.prompt) {
-      const scores = [...(state.scores || [])]; scores[me] += 10;
-      broadcast({ ...state, message: `✅ ${state.guess} صحيحة! +10` });
+      const scores = [...(state.scores || [])]; while (scores.length <= me) scores.push(0);
+      scores[me] += 10;
+      broadcast({ ...state, message: `✅ ${state.guess} صحيحة! +10 — الراسم يضغط إنهاء الجولة` });
     } else {
       broadcast({ ...state, message: "❌ ليست الكلمة — حاول مرة أخرى" });
     }
@@ -47,8 +48,7 @@ export function DrawingRelay({ state, broadcast, pc }: Props) {
 
   const endRound = () => {
     if (!isDrawer) return;
-    const history = [...(state.history || [])].concat(state.message?.includes("صحيحة") ? [] : []);
-    if (state.round >= state.maxRounds) { broadcast({ ...state, phase: "result", history }); }
+    if (state.round >= state.maxRounds) { broadcast({ ...state, phase: "result" }); }
     else { broadcast({ ...state, phase: "playing", drawerIdx: (state.drawerIdx + 1) % len, prompt: PROMPTS[Math.floor(Math.random() * PROMPTS.length)], round: state.round + 1, message: "", drawingData: null, guess: "" }); }
   };
 

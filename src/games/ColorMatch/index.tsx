@@ -15,7 +15,7 @@ export function ColorMatch({ state, broadcast, pc }: Props) {
 
   const flip = (idx: number) => {
     if (!state || me !== state.turn || me === -1 || state.matched[idx] || state.revealed[idx]) return;
-    const already = state.revealed.filter((v: boolean) => v).length;
+    const already = state.revealed.filter((v: boolean, i: number) => v && !state.matched[i]).length;
     if (already >= 2) return;
 
     const revealed = [...state.revealed]; revealed[idx] = true;
@@ -29,7 +29,7 @@ export function ColorMatch({ state, broadcast, pc }: Props) {
     const [a, b] = open;
     if (state.grid[a] === state.grid[b]) {
       const matched = [...state.matched]; matched[a] = true; matched[b] = true;
-      const scores = [...(state.scores || [])]; scores[me] += 10;
+      const scores = [...(state.scores || [])]; while (scores.length <= me) scores.push(0); scores[me] += 10;
       const done = matched.every(Boolean);
       broadcast({ ...state, matched, scores, turn: done ? state.turn : (state.turn + 1) % len, revealed, message: done ? "🎉 اللوحة اكتملت!" : `✅ تطابق! +10 — الدور لـ ${pc.players?.[(state.turn + 1) % len]?.name || ""}` });
     } else {

@@ -3,7 +3,7 @@ import { GameCard } from "../components/GameCard";
 const GAMES = [
   { id: "word-chain", t: "سلسلة الكلمات", d: "تعاونوا لتكوين كلمات عربية", e: "🔤", g: "from-violet-600 to-indigo-800" },
   { id: "drawing-relay", t: "رسم بالتناوب", d: "واحد يرسم والآخر يخمن", e: "🎨", g: "from-cyan-500 to-blue-700" },
-  { id: "maze-runner", t: "لعبة المتاهة", d: "L1 يرى — L2 يتحرك", e: "🏰", g: "from-amber-500 to-orange-700" },
+  { id: "maze-runner", t: "لعبة المتاهة", d: "المضيف يوجّه والمتحرك يمشي", e: "🏰", g: "from-amber-500 to-orange-700" },
   { id: "color-match", t: "تطابق الألوان", d: "اكتشفوا الأزواج المتطابقة", e: "🎯", g: "from-pink-500 to-rose-700" },
   { id: "simon-says", t: "سايمون يقول", d: "انسخوا التسلسل المتزايد", e: "🧠", g: "from-emerald-500 to-teal-700" },
 ];
