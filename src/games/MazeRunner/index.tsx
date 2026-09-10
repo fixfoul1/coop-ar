@@ -39,13 +39,42 @@ export function MazeRunner({ state, broadcast, pc }: Props) {
   const isGuide = pc.isHost;
   const me = pc.playerIdx;
 
+  useEffect(() => {
+    if (!canvasRef.current || !state || state.phase !== "playing") return;
+    const canvas = canvasRef.current; const ctx = canvas.getContext("2d"); if (!ctx) return;
+    const lv = state.level;
+    if (!lv) return;
+    const cs = Math.min(Math.floor(canvas.width / lv.width), Math.floor(canvas.height / lv.height));
+    const ox = Math.floor((canvas.width - cs * lv.width) / 2); const oy = Math.floor((canvas.height - cs * lv.height) / 2);
+    ctx.fillStyle = "#0a0a1a"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < lv.height; y++) for (let x = 0; x < lv.width; x++) {
+      const sx = ox + x * cs, sy = oy + y * cs;
+      const isWall = lv.walls.some((w: Cell) => w.x === x && w.y === y);
+      const isTrap = lv.traps.some((t: Cell) => t.x === x && t.y === y);
+      let visible = isGuide;
+      if (!isGuide && Math.abs(x - state.playerX) + Math.abs(y - state.playerY) <= 2) visible = true;
+      if (!visible) { ctx.fillStyle = "#050510"; ctx.fillRect(sx, sy, cs, cs); continue; }
+      if (isWall) { ctx.fillStyle = "#312e81"; ctx.fillRect(sx, sy, cs, cs); }
+      else if (isTrap) { ctx.fillStyle = "rgba(217,70,239,.35)"; ctx.fillRect(sx, sy, cs, cs); }
+      else { ctx.fillStyle = "rgba(30,27,75,.5)"; ctx.fillRect(sx, sy, cs, cs); }
+    }
+    const eg = ctx.createRadialGradient(ox + lv.end.x * cs + cs / 2, oy + lv.end.y * cs + cs / 2, 0, ox + lv.end.x * cs + cs / 2, oy + lv.end.y * cs + cs / 2, cs * 1.5);
+    eg.addColorStop(0, "rgba(16,185,129,.8)"); eg.addColorStop(1, "rgba(16,185,129,0)");
+    ctx.fillStyle = eg; ctx.fillRect(ox + lv.end.x * cs - cs, oy + lv.end.y * cs - cs, cs * 3, cs * 3);
+    ctx.fillStyle = "#10b981"; ctx.fillRect(ox + lv.end.x * cs + cs * .2, oy + lv.end.y * cs + cs * .2, cs * .6, cs * .6);
+    const pg = ctx.createRadialGradient(ox + state.playerX * cs + cs / 2, oy + state.playerY * cs + cs / 2, 0, ox + state.playerX * cs + cs / 2, oy + state.playerY * cs + cs / 2, cs * 2);
+    pg.addColorStop(0, "rgba(99,102,241,.6)"); pg.addColorStop(1, "rgba(99,102,241,0)");
+    ctx.fillStyle = pg; ctx.fillRect(ox + state.playerX * cs - cs * 1.5, oy + state.playerY * cs - cs * 1.5, cs * 4, cs * 4);
+    ctx.fillStyle = "#818cf8"; ctx.fillRect(ox + state.playerX * cs + cs * .15, oy + state.playerY * cs + cs * .15, cs * .7, cs * .7);
+  }, [state, isGuide]);
+
   const startGame = () => {
     const level = genMaze(9);
     broadcast({ phase: "playing", level, playerX: 1, playerY: 1, currentLevel: 1, scores: new Array(len).fill(0), message: "" });
   };
 
   const blocked = (x: number, y: number) =>
-    state.level.walls.some((w: Cell) => w.x === x && w.y === y) || state.level.traps.some((t: Cell) => t.x === x && t.y === y);
+    state && (state.level.walls.some((w: Cell) => w.x === x && w.y === y) || state.level.traps.some((t: Cell) => t.x === x && t.y === y));
 
   const move = (dir: string) => {
     if (!state || isGuide) return;
@@ -84,34 +113,6 @@ export function MazeRunner({ state, broadcast, pc }: Props) {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current; const ctx = canvas.getContext("2d"); if (!ctx) return;
-    const lv = state.level;
-    const cs = Math.min(Math.floor(canvas.width / lv.width), Math.floor(canvas.height / lv.height));
-    const ox = Math.floor((canvas.width - cs * lv.width) / 2); const oy = Math.floor((canvas.height - cs * lv.height) / 2);
-    ctx.fillStyle = "#0a0a1a"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    for (let y = 0; y < lv.height; y++) for (let x = 0; x < lv.width; x++) {
-      const sx = ox + x * cs, sy = oy + y * cs;
-      const isWall = lv.walls.some((w: Cell) => w.x === x && w.y === y);
-      const isTrap = lv.traps.some((t: Cell) => t.x === x && t.y === y);
-      let visible = isGuide;
-      if (!isGuide && Math.abs(x - state.playerX) + Math.abs(y - state.playerY) <= 2) visible = true;
-      if (!visible) { ctx.fillStyle = "#050510"; ctx.fillRect(sx, sy, cs, cs); continue; }
-      if (isWall) { ctx.fillStyle = "#312e81"; ctx.fillRect(sx, sy, cs, cs); }
-      else if (isTrap) { ctx.fillStyle = "rgba(217,70,239,.35)"; ctx.fillRect(sx, sy, cs, cs); }
-      else { ctx.fillStyle = "rgba(30,27,75,.5)"; ctx.fillRect(sx, sy, cs, cs); }
-    }
-    const eg = ctx.createRadialGradient(ox + lv.end.x * cs + cs / 2, oy + lv.end.y * cs + cs / 2, 0, ox + lv.end.x * cs + cs / 2, oy + lv.end.y * cs + cs / 2, cs * 1.5);
-    eg.addColorStop(0, "rgba(16,185,129,.8)"); eg.addColorStop(1, "rgba(16,185,129,0)");
-    ctx.fillStyle = eg; ctx.fillRect(ox + lv.end.x * cs - cs, oy + lv.end.y * cs - cs, cs * 3, cs * 3);
-    ctx.fillStyle = "#10b981"; ctx.fillRect(ox + lv.end.x * cs + cs * .2, oy + lv.end.y * cs + cs * .2, cs * .6, cs * .6);
-    const pg = ctx.createRadialGradient(ox + state.playerX * cs + cs / 2, oy + state.playerY * cs + cs / 2, 0, ox + state.playerX * cs + cs / 2, oy + state.playerY * cs + cs / 2, cs * 2);
-    pg.addColorStop(0, "rgba(99,102,241,.6)"); pg.addColorStop(1, "rgba(99,102,241,0)");
-    ctx.fillStyle = pg; ctx.fillRect(ox + state.playerX * cs - cs * 1.5, oy + state.playerY * cs - cs * 1.5, cs * 4, cs * 4);
-    ctx.fillStyle = "#818cf8"; ctx.fillRect(ox + state.playerX * cs + cs * .15, oy + state.playerY * cs + cs * .15, cs * .7, cs * .7);
-  }, [state, isGuide]);
 
   return (
     <div className="flex w-full max-w-lg flex-col items-center gap-4">
